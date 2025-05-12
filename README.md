@@ -1,0 +1,1 @@
+# smart_city_trash_bin_monitor
