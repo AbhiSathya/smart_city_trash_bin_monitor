@@ -3,6 +3,8 @@ DATA_INTERVAL_SECONDS = 10  # Interval between records
 ENABLE_DUPLICATES = True    # Allow duplicate records occasionally
 ENABLE_ERRORS = True        # Allow corrupted/incomplete/null etc.
 
+error_freq = 0.2
+
 # Smart Bin Configuration
 BIN_IDS = ["B001", "B002", "B003", "B004"]
 WARDS = [1, 2, 3, 4, 5]

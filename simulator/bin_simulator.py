@@ -77,23 +77,15 @@ def bin_worker(bin_id):
 
         if triggered:
             try:
-                # Use last valid if duplicate error is selected
-                use_duplicate = config.ENABLE_ERRORS and random.choice(config.ERROR_TYPES) == "duplicate"
-
-                if use_duplicate:
-                    if bin_id in last_valid_records:
-                        record = last_valid_records[bin_id]
-                    else:
-                        record = generate_valid_record(bin_id)
-                        if config.ENABLE_ERRORS:
-                            record = introduce_data_issues(record)
-                        last_valid_records[bin_id] = record
-                else:
+                if(random.random() < config.error_freq):
                     record = generate_valid_record(bin_id)
-                    if config.ENABLE_ERRORS:
-                        record = introduce_data_issues(record)
+                    record = introduce_data_issues(record)
                     last_valid_records[bin_id] = record
-
+                    print("Error introduced")
+                    
+                else:
+                   record = generate_valid_record(bin_id)
+                            
                 # Simulate output to log or stream
                 print(json.dumps(record))
 
