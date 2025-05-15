@@ -1,9 +1,12 @@
-# Simulation Settings
-DATA_INTERVAL_SECONDS = 10  # Interval between records
-ENABLE_DUPLICATES = True    # Allow duplicate records occasionally
-ENABLE_ERRORS = True        # Allow corrupted/incomplete/null etc.
+import os
 
-error_freq = 0.2
+# Kafka config
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "smart_bin_data")
+
+# Data simulator config
+error_freq = float(os.getenv("ERROR_FREQ") or "0.2")
+DATA_INTERVAL_SECONDS = int(os.getenv("DATA_INTERVAL_SECONDS") or "10")
 
 # Smart Bin Configuration
 BIN_IDS = ["B001", "B002", "B003", "B004"]
