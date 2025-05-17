@@ -5,33 +5,31 @@ import random
 import threading
 from datetime import datetime, timezone, timedelta
 from kafka import KafkaProducer
-from kafka.errors import NoBrokersAvailable # type: ignore
+from kafka.errors import NoBrokersAvailable #type:ignore
 import config
 
 stop_event = threading.Event()
 trigger_event = threading.Event()
 
-# Retry logic for KafkaProducer connection
 def get_kafka_producer(bootstrap_servers, retries=10, delay=5):
+    """Retry logic for KafkaProducer connection"""
     for attempt in range(1, retries + 1):
         try:
-            print(f"[INFO] Attempting to connect to Kafka ({attempt}/{retries})...")
-            producer = KafkaProducer(
+            print(f"[INFO] Connecting to Kafka ({attempt}/{retries})...")
+            return KafkaProducer(
                 bootstrap_servers=bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode("utf-8")
             )
-            print("[INFO] Connected to Kafka successfully.")
-            return producer
         except NoBrokersAvailable as e:
-            print(f"[WARN] Kafka not available (attempt {attempt}): {e}")
+            print(f"[WARN] Kafka unavailable: {e}")
             time.sleep(delay)
-    print("[ERROR] Failed to connect to Kafka after multiple retries. Exiting.")
+    print("[ERROR] Kafka connection failed after retries. Exiting.")
     sys.exit(1)
 
-# Initialize Kafka producer with retry
+# Initialize Kafka producer
 producer = get_kafka_producer(config.KAFKA_BOOTSTRAP_SERVERS)
 
-# Metadata for bins
+# Predefined metadata for bins
 bin_metadata = {
     bin_id: {
         "latitude": round(random.uniform(*config.LATITUDE_RANGE), 6),
@@ -41,9 +39,8 @@ bin_metadata = {
     for bin_id in config.BIN_IDS
 }
 
-last_valid_records = {}
-
 def generate_valid_record(bin_id):
+    """Generates a valid smart bin record"""
     meta = bin_metadata[bin_id]
     return {
         "bin_id": bin_id,
@@ -57,6 +54,7 @@ def generate_valid_record(bin_id):
     }
 
 def introduce_data_issues(record):
+    """Introduces issues into a smart bin record"""
     issue_type = random.choice(config.ERROR_TYPES)
 
     if issue_type == "null":
@@ -66,9 +64,13 @@ def introduce_data_issues(record):
         record[field] = 150 if field == "fill_level" else -20
     elif issue_type == "timestamp_skew":
         skew_days = random.choice([-365, 365])
-        record["timestamp"] = (datetime.now(timezone.utc) + timedelta(days=skew_days)).isoformat().replace("+00:00", "Z")
+        record["timestamp"] = (
+            datetime.now(timezone.utc) + timedelta(days=skew_days)
+        ).isoformat().replace("+00:00", "Z")
     elif issue_type == "incomplete":
-        for field in random.sample([k for k in record if k != "bin_id"], min(3, len(record) - 1)):
+        for field in random.sample(
+            [k for k in record if k != "bin_id"], min(3, len(record) - 1)
+        ):
             record.pop(field, None)
     elif issue_type == "corrupted":
         record["fill_level"] = "high"
@@ -76,26 +78,30 @@ def introduce_data_issues(record):
     return record
 
 def bin_worker(bin_id):
+    """Thread function for generating bin data"""
     while not stop_event.is_set():
         if trigger_event.wait(timeout=1):
             try:
                 record = generate_valid_record(bin_id)
 
                 if random.random() < config.error_freq:
-                    record = introduce_data_issues(record)
-                    print(f"[DEBUG] Error introduced for bin {bin_id}")
+                    invalid_record = introduce_data_issues(record.copy())
+                    topic = config.INVALID_TOPIC
+                    print(f"[DEBUG] Invalid record for bin {bin_id}")
+                    producer.send(topic, value=invalid_record)
+                else:
+                    topic = config.VALID_TOPIC
+                    producer.send(topic, value=record)
 
-                last_valid_records[bin_id] = record
-                producer.send(config.KAFKA_TOPIC, value=record)
-                print(json.dumps(record))  # For debug/logging
+                print(f"[{topic}] {json.dumps(record)}")
 
             except Exception as e:
-                print(f"[ERROR] Bin {bin_id}: {e}")
-
+                print(f"[ERROR] Bin {bin_id} error: {e}")
             trigger_event.clear()
 
-if __name__ == "__main__":
-    print(f"[INFO] Starting Smart Bin Simulator with {len(config.BIN_IDS)} bins. Interval: {config.DATA_INTERVAL_SECONDS}s. Press Ctrl+C to stop.\n")
+def main():
+    print(f"\n[INFO] Starting Smart Bin Simulator with {len(config.BIN_IDS)} bins")
+    print(f"[INFO] Sending data every {config.DATA_INTERVAL_SECONDS} seconds\n")
 
     threads = [
         threading.Thread(target=bin_worker, args=(bin_id,), daemon=True)
@@ -109,12 +115,14 @@ if __name__ == "__main__":
         while not stop_event.is_set():
             trigger_event.set()
             time.sleep(0.5)
-            print()
             time.sleep(config.DATA_INTERVAL_SECONDS - 0.5)
     except KeyboardInterrupt:
-        print("\n[INFO] Ctrl+C received. Shutting down gracefully...")
+        print("\n[INFO] Ctrl+C received. Shutting down...")
         stop_event.set()
 
     time.sleep(1)
     producer.close()
     print("[INFO] Simulator stopped.")
+
+if __name__ == "__main__":
+    main()

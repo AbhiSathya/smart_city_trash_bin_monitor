@@ -1,12 +1,16 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Kafka config
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "smart_bin_data")
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+VALID_TOPIC = os.getenv("VALID_TOPIC", "valid-trash-bin-data")
+INVALID_TOPIC = os.getenv("INVALID_TOPIC", "invalid-trash-data")
 
 # Data simulator config
-error_freq = float(os.getenv("ERROR_FREQ") or "0.2")
-DATA_INTERVAL_SECONDS = int(os.getenv("DATA_INTERVAL_SECONDS") or "10")
+DATA_INTERVAL_SECONDS = int(os.getenv("DATA_INTERVAL_SECONDS", "10"))
+error_freq = float(os.getenv("ERROR_FREQ", "0.2"))
 
 # Smart Bin Configuration
 BIN_IDS = ["B001", "B002", "B003", "B004"]

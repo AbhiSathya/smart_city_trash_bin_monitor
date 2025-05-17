@@ -6,9 +6,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     LANG=C.UTF-8
-    
-RUN pip install --no-cache-dir kafka-python
 
 COPY . .
+
+
+RUN pip install -r requirements.txt
+
 
 CMD ["python", "bin_simulator.py"]
