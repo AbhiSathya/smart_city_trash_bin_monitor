@@ -1,0 +1,152 @@
+import threading
+import time
+import random
+from datetime import datetime, timezone
+
+class VirtualTrashBin(threading.Thread):
+
+    def __init__(self, bin_id, latitude=None, longitude=None, ward=None, interval=10, error_freq=0.2):
+        super().__init__()
+        self.bin_id = bin_id
+        self.latitude = latitude if latitude is not None else round(random.uniform(12.90, 12.99), 6)  # Example: Bangalore area
+        self.longitude = longitude if longitude is not None else round(random.uniform(77.50, 77.70), 6)
+        self.ward = ward if ward is not None else random.randint(1, 100)
+        self.interval = interval
+        self.error_freq = error_freq
+        self._stop_event = threading.Event()
+
+        self.fill_level = random.randint(0, 20)
+        self.temperature = round(random.uniform(25.0, 30.0), 1)
+        self.humidity = random.randint(40, 60)
+
+        self.data_attributes = ["bin_id", "timestamp", "fill_level", "latitude", "longitude", "humidity", "temperature", "ward"]
+
+    def update_values(self):
+
+        if self.fill_level < 100:
+            self.fill_level += random.randint(0, 5)
+        
+        if self.fill_level > 100:
+            self.fill_level = 100
+
+        # Slight random fluctuations in environment
+        self.temperature += round(random.uniform(-0.5, 0.5), 1)
+        self.temperature = min(max(self.temperature, 20), 45)
+
+        self.humidity += random.randint(-2, 2)
+        self.humidity = min(max(self.humidity, 30), 90)
+
+    def generate_data(self):
+
+            # {
+            #   "bin_id": "B001",
+            #   "latitude": 12.9716,
+            #   "longitude": 77.5946,
+            #   "ward": 5,
+            #   "fill_level": 94,
+            #   "temperature": 32.5,
+            #   "humidity": 65,
+            #   "timestamp": "2025-05-12T10:30:00Z"
+            # }
+
+        data = {
+            "bin_id": self.bin_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "fill_level": self.fill_level,
+            "temperature": self.temperature,
+            "humidity" : self.humidity,
+            "langitude" : self.latitude,
+            "longitude" : self.longitude,
+            "ward" : self.ward
+        }
+
+        # Also need to update the values for the next Interval
+        self.update_values()
+
+        if random.random() < self.error_freq:
+            data = self.make_invalid_data(data)
+
+        return data
+    
+
+    # Invalid Data Making Section
+    def make_invalid_data(self, data):
+        x = random.randint(1, len(self.data_attributes)) # Number of attributes to modify
+        selected_attributes = random.sample(self.data_attributes, x) # randomly selecting x number of attributes
+
+        for attribute in selected_attributes:
+            if attribute == 'bin_id':
+                data = self.make_invalid_bin_id_data(data)
+            
+            elif attribute == 'latitude':
+                data = self.make_invalid_latitude_data(data)
+
+            elif attribute == 'longitude':
+                data = self.make_invalid_longitude_data(data)
+
+            elif attribute == 'ward':
+                data = self.make_invalid_ward_data(data)
+
+            elif attribute == 'fill_level':
+                data = self.make_invalid_fill_level_data(data)
+
+            elif attribute == 'temperature':
+                data = self.make_invalid_temperature_data(data)
+
+            elif attribute == 'humidity':
+                data = self.make_invalid_humidity_data(data)
+
+            elif attribute == 'timestamp':
+                data = self.make_invalid_timestamp_data(data)
+
+        return data
+
+
+
+    def make_invalid_bin_id_data(self, data):
+        return data
+
+
+    def make_invalid_latitude_data(self, data):
+        return data
+
+
+    def make_invalid_longitude_data(self, data):
+        return data
+
+
+    def make_invalid_ward_data(self, data):
+        return data
+
+
+    def make_invalid_fill_level_data(self, data):
+        return data
+
+
+    def make_invalid_temperature_data(self, data):
+        return data
+
+
+    def make_invalid_humidity_data(self, data):
+        return data
+
+
+    def make_invalid_timestamp_data(self, data):
+        return data
+
+
+
+    # Thread State handler Section
+
+    def run(self):
+        print(f'[INFO] Bin {self.bin_id} started')
+        while not self._stop_event.is_set():
+            time.sleep(self.interval)
+            data = self.generate_data()
+            print(f'[INFO] [{self.bin_id}] {data}')
+
+    def stop(self):
+        self._stop_event.set()
+        print(f'[INFO] Bin {self.bin_id} stopped')
+
+    
