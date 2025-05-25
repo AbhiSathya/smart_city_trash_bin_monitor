@@ -24,7 +24,7 @@ class VirtualTrashBin(threading.Thread):
     def update_values(self):
 
         if self.fill_level < 100:
-            self.fill_level += random.randint(0, 5)
+            self.fill_level += random.uniform(0, 5)
         
         if self.fill_level > 100:
             self.fill_level = 100
@@ -104,34 +104,124 @@ class VirtualTrashBin(threading.Thread):
 
 
     def make_invalid_bin_id_data(self, data):
+        data['bin_id'] = None
         return data
 
 
     def make_invalid_latitude_data(self, data):
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['latitude'] = None
+        
+        elif choice == 1:
+            data['latitude'] = random.choice([
+                                    round(random.uniform(-180, -90.1), 6),
+                                    round(random.uniform(90.1, 180), 6)
+                                ])
+            
+        elif choice == 2:
+            data['latitude'] = random.choice(["north", "abc", "", "NaN"])
+
         return data
 
 
     def make_invalid_longitude_data(self, data):
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['longitude'] = None
+        
+        elif choice == 1:
+            data['longitude'] = random.choice([
+                                    round(random.uniform(-300, -180.1), 6),
+                                    round(random.uniform(180.1, 300), 6)
+                                ])
+            
+        elif choice == 2:
+            data['longitude'] = random.choice(["north", "abc", "", "NaN"])
+
         return data
 
 
     def make_invalid_ward_data(self, data):
+        
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['ward'] = None
+        
+        elif choice == 1:
+            data['ward'] = random.randint(-1000, 0)
+
+        elif choice == 2:
+            data['ward'] = random.choice([12.34, "five", "", [], {}, "NaN"])
+
         return data
 
 
     def make_invalid_fill_level_data(self, data):
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['fill_level'] = None
+
+        elif choice == 1:
+            data['fill_level'] = random.choice([
+                random.randint(0, -100),
+                random.randint(101, 200)
+            ])
+
+        elif choice == 2:
+            data['fill_level'] = random.choice(["five", "", [], {}, "NaN"])
+
         return data
 
 
     def make_invalid_temperature_data(self, data):
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['temperature'] = None
+        
+        elif choice == 1:
+            data['temperature'] = random.choice([
+                random.randint(-1000, 49),
+                random.randint(81, 1000)
+            ])
+
+        elif choice == 2:
+            data['temperature'] = random.choice(["five", "", [], {}, "NaN"])
+
         return data
 
 
     def make_invalid_humidity_data(self, data):
+
+        choice = random.randint(0, 2)
+
+        if choice == 0:
+            data['humidity'] = None
+        
+        elif choice == 1:
+            data['humidity'] = random.choice([
+                random.randint(-1000, -1),
+                random.randint(101, 1000)
+            ])
+
+        elif choice == 2:
+            data['humidity'] = random.choice([12.34, "five", "", [], {}, "NaN"])
         return data
 
 
     def make_invalid_timestamp_data(self, data):
+        choice = random.randint(0, 1)
+
+        if choice == 0:
+            data['timestamp'] = None
+
+        elif choice == 1:
+            data['timestamp'] = random.choice([12.34, "five", "", [], {}, "NaN"])
         return data
 
 
