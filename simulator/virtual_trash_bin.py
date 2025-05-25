@@ -168,7 +168,7 @@ class VirtualTrashBin(threading.Thread):
 
         elif choice == 1:
             data['fill_level'] = random.choice([
-                random.randint(0, -100),
+                random.randint(-100, -1),
                 random.randint(101, 200)
             ])
 
