@@ -8,7 +8,7 @@ from kafka.errors import NoBrokersAvailable #type:ignore
 
 class VirtualTrashBin(threading.Thread):
 
-    def __init__(self, bin_id, latitude=None, longitude=None, ward=None, interval=10, error_freq=0.2, bootstrap_servers='localhost:9092'):
+    def __init__(self, bin_id, latitude=None, longitude=None, ward=None, interval=5, error_freq=0.2, bootstrap_servers='localhost:9092'):
         super().__init__()
         self.bin_id = bin_id
         self.latitude = latitude if latitude is not None else round(random.uniform(12.90, 12.99), 6)  # Example: Bangalore area
@@ -255,16 +255,17 @@ class VirtualTrashBin(threading.Thread):
     def run(self):
         print(f'[INFO] Bin {self.bin_id} started')
         while not self._stop_event.is_set():
-            time.sleep(self.interval)
+            time.sleep(self.interval + random.randint(-1 * self.interval, self.interval))
             data = self.generate_data()
             print(f'[INFO] [{self.bin_id}] {data}')
             while self.producer is None:
                 self.producer = self.get_kafka_producer()
             self.producer.send(self.TOPIC, value=data)
+        print(f'[INFO] Bin {self.bin_id} stopped')
 
 
     def stop(self):
         self._stop_event.set()
-        print(f'[INFO] Bin {self.bin_id} stopped')
+        print(f'[INFO] Bin {self.bin_id} stopping')
 
     
