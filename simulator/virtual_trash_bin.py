@@ -2,10 +2,13 @@ import threading
 import time
 import random
 from datetime import datetime, timezone
+import json
+from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable #type:ignore
 
 class VirtualTrashBin(threading.Thread):
 
-    def __init__(self, bin_id, latitude=None, longitude=None, ward=None, interval=10, error_freq=0.2):
+    def __init__(self, bin_id, latitude=None, longitude=None, ward=None, interval=10, error_freq=0.2, bootstrap_servers='localhost:9092'):
         super().__init__()
         self.bin_id = bin_id
         self.latitude = latitude if latitude is not None else round(random.uniform(12.90, 12.99), 6)  # Example: Bangalore area
@@ -20,6 +23,10 @@ class VirtualTrashBin(threading.Thread):
         self.humidity = random.randint(40, 60)
 
         self.data_attributes = ["bin_id", "timestamp", "fill_level", "latitude", "longitude", "humidity", "temperature", "ward"]
+
+        self.bootstrap_servers = bootstrap_servers
+        self.producer = self.get_kafka_producer()
+        self.TOPIC = "raw-trash-bin-data"
 
     def update_values(self):
 
@@ -68,6 +75,23 @@ class VirtualTrashBin(threading.Thread):
 
         return data
     
+
+    # Kafka Handling Section
+
+    def get_kafka_producer(self, retries=10, delay=5):
+        """Retry logic for KafkaProducer connection"""
+        for attempt in range(1, retries + 1):
+            try:
+                print(f"[INFO] Connecting to Kafka ({attempt}/{retries})...")
+                return KafkaProducer(
+                    bootstrap_servers=self.bootstrap_servers,
+                    value_serializer=lambda v: json.dumps(v).encode("utf-8")
+                )
+            except NoBrokersAvailable as e:
+                print(f"[WARN] Kafka unavailable: {e}")
+                time.sleep(delay)
+        print("[ERROR] Kafka connection failed after retries. Exiting.")
+        return None
 
     # Invalid Data Making Section
     def make_invalid_data(self, data):
@@ -234,6 +258,10 @@ class VirtualTrashBin(threading.Thread):
             time.sleep(self.interval)
             data = self.generate_data()
             print(f'[INFO] [{self.bin_id}] {data}')
+            while self.producer is None:
+                self.producer = self.get_kafka_producer()
+            self.producer.send(self.TOPIC, value=data)
+
 
     def stop(self):
         self._stop_event.set()
