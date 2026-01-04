@@ -4,7 +4,7 @@ import json
 import random
 import threading
 from datetime import datetime, timezone, timedelta
-from kafka import KafkaProducer
+from kafka import KafkaProducer # type: ignore
 from kafka.errors import NoBrokersAvailable #type:ignore
 import config
 
@@ -84,16 +84,16 @@ def bin_worker(bin_id):
             try:
                 record = generate_valid_record(bin_id)
 
-                if random.random() < config.error_freq:
+                if random.random() < config.ERROR_FREQ:
                     invalid_record = introduce_data_issues(record.copy())
                     topic = config.INVALID_TOPIC
                     print(f"[DEBUG] Invalid record for bin {bin_id}")
                     producer.send(topic, value=invalid_record)
+                    print(f"[{topic}] {json.dumps(invalid_record)}")
                 else:
                     topic = config.VALID_TOPIC
                     producer.send(topic, value=record)
-
-                print(f"[{topic}] {json.dumps(record)}")
+                    print(f"[{topic}] {json.dumps(record)}")
 
             except Exception as e:
                 print(f"[ERROR] Bin {bin_id} error: {e}")
