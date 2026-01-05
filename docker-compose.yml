@@ -21,9 +21,8 @@ services:
     ports:
       - "9092:9092"
 
-    # HEALTHCHECK
     healthcheck:
-      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "kafka:9092", "--list"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -77,5 +76,46 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
     restart: always
 
+  spark:
+    build:
+      context: ./spark-apps
+    container_name: spark
+    depends_on:
+      - kafka
+      - postgres
+    command: >
+      /opt/spark/bin/spark-submit
+      --master local[*]
+      --conf spark.jars.ivy=/tmp/.ivy2
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1
+      /opt/spark-apps/kafka_to_postgres.py
+    volumes:
+      - ./spark-apps:/opt/spark-apps
+      - spark_checkpoints:/opt/spark-checkpoints
+    ports:
+      - "4040:4040"
+    restart: "no"
+
+  # spark:
+  #   image: apache/spark:3.5.0
+  #   container_name: spark
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_started
+  #   user: root
+  #   volumes:
+  #     - ./spark-apps:/opt/spark-apps
+  #     - spark_checkpoints:/opt/spark-checkpoints
+  #   command: >
+  #     bash -c "mkdir -p /opt/spark-checkpoints/ward_fill_level_aggregation_v1 &&
+  #             chown -R spark:spark /opt/spark-checkpoints &&
+  #             su spark -c '/opt/spark/bin/spark-submit --master local[*] --conf spark.jars.ivy=/tmp/.ivy2 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1 /opt/spark-apps/kafka_to_postgres.py'"
+  #   restart: "no" # IMPORTANT: Spark should NOT auto-restart
+  #   ports:
+  #     - "4040:4040"  # Spark Web UI
+
 volumes:
   pgdata:
+  spark_checkpoints:
