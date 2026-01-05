@@ -13,9 +13,69 @@ from pyspark.sql.types import (  # type: ignore
     DoubleType,
     TimestampType
 )
+import time
 import psycopg2
 from psycopg2.extras import execute_batch
+from pyspark.sql.streaming import StreamingQueryListener  # type: ignore
 
+
+class QueryProgressLogger(StreamingQueryListener):
+
+    def onQueryStarted(self, event):
+        print(
+            f"🚀 Query started | id={event.id} | name={event.name}",
+            flush=True
+        )
+
+    def onQueryProgress(self, event):
+        p = event.progress
+
+        # ---------- basic metrics ----------
+        batch_id = p.batchId
+        input_rows = p.numInputRows
+
+        duration = p.durationMs or {}
+        add_batch_time = duration.get("addBatch", "N/A")
+        trigger_time = duration.get("triggerExecution", "N/A")
+
+        # ---------- watermark ----------
+        watermark = "N/A"
+        if p.eventTime:
+            watermark = p.eventTime.get("watermark", "N/A")
+
+        # ---------- state store ----------
+        state_rows = 0
+        state_mem = 0
+
+        if p.stateOperators:
+            state = p.stateOperators[0]
+            state_rows = getattr(state, "numRowsTotal", 0)
+            state_mem = getattr(state, "memoryUsedBytes", 0)
+
+        print(
+            f"""
+                📊 Streaming Progress
+                --------------------
+                Batch ID        : {batch_id}
+                Input Rows      : {input_rows}
+                AddBatch Time   : {add_batch_time} ms
+                Trigger Time    : {trigger_time} ms
+                Watermark       : {watermark}
+                State Rows      : {state_rows}
+                State Memory    : {state_mem / 1024 / 1024:.2f} MB
+            """,
+            flush=True
+        )
+
+    def onQueryIdle(self, event):
+        # Normal when no Kafka data arrives
+        pass
+
+    def onQueryTerminated(self, event):
+        print(
+            f"🛑 Query terminated | id={event.id} | exception={event.exception}",
+            flush=True
+        )
 
 
 class WardFillLevelStreamingJob:
@@ -70,6 +130,7 @@ class WardFillLevelStreamingJob:
             .option("kafka.bootstrap.servers", "kafka:9092")
             .option("subscribe", "valid-trash-bin-data")
             .option("startingOffsets", "latest")
+            .option("maxOffsetsPerTrigger", 500)
             .option("failOnDataLoss", "false")
             .load()
         )
@@ -119,12 +180,16 @@ class WardFillLevelStreamingJob:
     # ----------------------------------------------------
     @staticmethod
     def write_to_postgres(batch_df, batch_id: int):
-        if batch_df.rdd.isEmpty():
+        start_time = time.time()
+
+        row_count = batch_df.count()
+        if row_count == 0:
             print(f"⚠️ Batch {batch_id} is empty — skipping")
             return
 
-        print(f"📝 UPSERT batch {batch_id}")
+        print(f"📝 UPSERT batch {batch_id} | rows={row_count}")
 
+        # Convert Spark rows → Python tuples
         rows = [
             (
                 row.ward,
@@ -132,9 +197,10 @@ class WardFillLevelStreamingJob:
                 row.window_end,
                 row.avg_fill_level
             )
-            for row in batch_df.collect()
+            for row in batch_df.toLocalIterator()
         ]
 
+        # PostgreSQL connection
         conn = psycopg2.connect(
             host="postgres",
             port=5432,
@@ -156,11 +222,20 @@ class WardFillLevelStreamingJob:
                 avg_fill_level = EXCLUDED.avg_fill_level;
         """
 
+        # UPSERT in batches (efficient + idempotent)
         with conn:
             with conn.cursor() as cur:
-                execute_batch(cur, insert_sql, rows, page_size=100)
+                execute_batch(
+                    cur,
+                    insert_sql,
+                    rows,
+                    page_size=500
+                )
 
         conn.close()
+
+        duration = round(time.time() - start_time, 2)
+        print(f"✅ Batch {batch_id} committed in {duration}s")
 
     # ----------------------------------------------------
     # Start streaming
@@ -170,9 +245,14 @@ class WardFillLevelStreamingJob:
         clean_df = self.parse_and_deduplicate(kafka_df)
         agg_df = self.aggregate(clean_df)
 
+        # Register progress listener
+        self.spark.streams.addListener(QueryProgressLogger())
+
+        # Start streaming query
         query = (
             agg_df.writeStream
             .queryName("ward_fill_level_aggregation")
+            .trigger(processingTime="30 seconds")
             .outputMode("update")
             .foreachBatch(self.write_to_postgres)
             .option("checkpointLocation", self.checkpoint_path)
@@ -180,7 +260,10 @@ class WardFillLevelStreamingJob:
         )
 
         print("✅ Streaming query started", flush=True)
+
+        # Block until terminated
         query.awaitTermination()
+
 
 
 # ----------------------------------------------------
