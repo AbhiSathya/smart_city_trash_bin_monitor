@@ -106,6 +106,23 @@ services:
       - "4040:4040" # Spark Web UI
     restart: "no" # IMPORTANT: Spark should NOT auto-restart on failure to avoid duplicate processing
 
+  api:
+    build:
+      context: ./backend/api
+    container_name: api
+    depends_on:
+      postgres:
+        condition: service_started
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   spark_checkpoints:
