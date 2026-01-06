@@ -80,9 +80,6 @@ Apache Spark Structured Streaming
 ↓
 PostgreSQL (Aggregated Results)
 
-yaml
-Copy code
-
 ---
 
 ## 🧰 Tech Stack (Implemented)
@@ -114,39 +111,41 @@ smart-city-trash-bin-monitor/
 ├── .env.example # Environment configuration template
 └── README.md
 
-yaml
-Copy code
-
 ---
 
 ## 🚀 How to Run (Current)
 
-git clone <repository-url>
-cd smart-city-trash-bin-monitor
-docker compose up --build
+- git clone (https://github.com/AbhiSathya/smart_city_trash_bin_monitor.git)
+
+- cd smart-city-trash-bin-monitor
+
+- docker compose up --build
+
 
 Spark will:
 
-Consume live Kafka data
+- Consume live Kafka data
 
-Process valid events
+- Process valid events
 
-Route invalid events to DLQ
+- Route invalid events to DLQ
 
-Persist aggregated results into PostgreSQL
+- Persist aggregated results into PostgreSQL
 
 ---
 
 ## 🧪 Failure Scenarios Handled
-❌ Invalid JSON → routed to DLQ
+✅ Invalid JSON → routed to DLQ
 
-❌ Duplicate events → deduplicated
+✅ Duplicate events → deduplicated
 
-❌ Postgres temporarily down → retried safely
+✅ Postgres temporarily down → retried safely
 
-❌ Spark restart → resumes from checkpoint
+✅ Spark restart → resumes from checkpoint
 
-❌ Late data → handled via watermarking
+✅ Late data → handled via watermarking
+
+---
 
 ## 🔮 Planned Enhancements (Not Implemented Yet)
 The following features are intentionally not implemented yet and are planned as future phases:
