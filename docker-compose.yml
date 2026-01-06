@@ -81,20 +81,32 @@ services:
       context: ./spark-apps
     container_name: spark
     depends_on:
-      - kafka
-      - postgres
-    command: >
-      /opt/spark/bin/spark-submit
-      --master local[*]
-      --conf spark.jars.ivy=/tmp/.ivy2
-      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1
-      /opt/spark-apps/kafka_to_postgres.py
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+    user: root
     volumes:
       - ./spark-apps:/opt/spark-apps
       - spark_checkpoints:/opt/spark-checkpoints
+    command:
+      - /bin/bash
+      - -c
+      - |
+        mkdir -p /opt/spark-checkpoints/ward_fill_level_aggregation_v1
+        chown -R spark:spark /opt/spark-checkpoints
+        exec su spark -c "
+          /opt/spark/bin/spark-submit \
+          --master local[*] \
+          --conf spark.jars.ivy=/tmp/.ivy2 \
+          --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1 \
+          /opt/spark-apps/kafka_to_postgres.py
+        "
     ports:
       - "4040:4040"
     restart: "no"
+
+
 
   # spark:
   #   image: apache/spark:3.5.0
