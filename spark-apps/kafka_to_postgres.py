@@ -12,6 +12,7 @@ import time
 import psycopg2
 from psycopg2.extras import execute_batch
 from psycopg2 import OperationalError
+from config import Config
 
 
 # ----------------------------------------------------
@@ -74,6 +75,7 @@ class WardFillLevelStreamingJob:
     # ------------------------------------------------
     def _define_schema(self) -> StructType:
         return StructType([
+            StructField("schema_version", IntegerType(), True),
             StructField("bin_id", StringType(), True),
             StructField("latitude", DoubleType(), True),
             StructField("longitude", DoubleType(), True),
@@ -84,6 +86,7 @@ class WardFillLevelStreamingJob:
             StructField("timestamp", TimestampType(), True),
         ])
 
+
     # ------------------------------------------------
     # Kafka Source
     # ------------------------------------------------
@@ -92,8 +95,8 @@ class WardFillLevelStreamingJob:
         return (
             self.spark.readStream
             .format("kafka")
-            .option("kafka.bootstrap.servers", "kafka:9092")
-            .option("subscribe", "valid-trash-bin-data")
+            .option("kafka.bootstrap.servers", Config.KAFKA_BOOTSTRAP)
+            .option("subscribe", Config.VALID_TOPIC)
             .option("startingOffsets", "latest")
             .option("maxOffsetsPerTrigger", 500)
             .option("failOnDataLoss", "false")
@@ -143,9 +146,9 @@ class WardFillLevelStreamingJob:
             .selectExpr("to_json(struct(*)) AS value")
             .writeStream
             .format("kafka")
-            .option("kafka.bootstrap.servers", "kafka:9092")
-            .option("topic", "invalid-trash-bin-data")
-            .option("checkpointLocation", self.dlq_checkpoint)
+            .option("kafka.bootstrap.servers", Config.KAFKA_BOOTSTRAP)
+            .option("topic", Config.INVALID_TOPIC)
+            .option("checkpointLocation", Config.CHECKPOINT_DLQ)
             .start()
         )
 
@@ -217,11 +220,11 @@ class WardFillLevelStreamingJob:
 
         def db_write():
             conn = psycopg2.connect(
-                host="postgres",
-                port=5432,
-                database="trash_bin_db",
-                user="admin",
-                password="admin",
+                host=Config.DB_HOST,
+                port=Config.DB_PORT,
+                database=Config.DB_NAME,
+                user=Config.DB_USER,
+                password=Config.DB_PASSWORD,
                 connect_timeout=5,
                 options="-c statement_timeout=5000"
             )
@@ -263,7 +266,7 @@ class WardFillLevelStreamingJob:
         (
             agg_df.writeStream
             .queryName("ward_fill_level_aggregation")
-            .trigger(processingTime="10 seconds")
+            .trigger(processingTime=Config.TRIGGER_INTERVAL)
             .outputMode("update")
             .foreachBatch(
                 WardFillLevelStreamingJob.safe_foreach_batch(
