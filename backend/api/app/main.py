@@ -1,5 +1,6 @@
 from fastapi import FastAPI  # type: ignore
 from app.routes import health, wards
+from app.auth import auth_routes
 from sqlalchemy import text  # type: ignore
 from app.db import engine
 
@@ -10,6 +11,7 @@ app = FastAPI(
 
 app.include_router(health.router)
 app.include_router(wards.router)
+app.include_router(auth_routes.router)
 
 @app.on_event("startup")
 def startup_check():

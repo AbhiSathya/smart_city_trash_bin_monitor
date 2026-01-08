@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException    # type: ignore
+from fastapi import APIRouter, HTTPException, Depends    # type: ignore
 from sqlalchemy import text                 # type: ignore
 from app.db import engine
 from app.models import WardLatest, WardHistory
 from typing import List
+from app.auth.dependencies import require_role
+from app.middleware.rate_limit import rate_limiter
 
 router = APIRouter(prefix="/wards", tags=["wards"])
 
 
-@router.get("/latest", response_model=List[WardLatest])
+@router.get("/latest", response_model=List[WardLatest], dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
 def get_latest_all_wards():
     query = text("""
         SELECT ward, window_start, window_end, avg_fill_level
@@ -21,7 +23,7 @@ def get_latest_all_wards():
     return result
 
 
-@router.get("/{ward_id}/latest", response_model=WardLatest)
+@router.get("/{ward_id}/latest", response_model=WardLatest, dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
 def get_latest_for_ward(ward_id: int):
     query = text("""
         SELECT ward, window_start, window_end, avg_fill_level
@@ -42,7 +44,7 @@ def get_latest_for_ward(ward_id: int):
     return row
 
 
-@router.get("/{ward_id}/history", response_model=List[WardHistory])
+@router.get("/{ward_id}/history", response_model=List[WardHistory], dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
 def get_ward_history(ward_id: int, hours: int = 24, limit: int = 100):
     query = text("""
         SELECT window_end, avg_fill_level
