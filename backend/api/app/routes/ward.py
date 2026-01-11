@@ -1,22 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends    # type: ignore
 from sqlalchemy import text                 # type: ignore
 from app.db import engine
-from app.models import WardLatest, WardHistory
+from app.models.ward import WardLatest, WardHistory
 from typing import List
 from app.auth.dependencies import require_role
-from app.middleware.rate_limit import rate_limiter
 from app.cache.redis import get_cache, set_cache
+from app.middleware.rate_limit import rate_limiter
 
 router = APIRouter(prefix="/wards", tags=["wards"])
 
 
-@router.get("/latest", response_model=List[WardLatest], dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
+@router.get("/latest", response_model=List[WardLatest], dependencies=[Depends(require_role(["viewer", "admin"]))])
 def get_latest_all_wards():
-    cache_key = "wards:latest"
-    cached_data = get_cache(cache_key)
-    if cached_data:
-        return cached_data
-    
     query = text("""
         SELECT ward, window_start, window_end, avg_fill_level
         FROM ward_latest_fill_level
@@ -27,18 +22,13 @@ def get_latest_all_wards():
         rows = conn.execute(query).mappings().all()
 
     result = [dict(row) for row in rows]
-    set_cache(cache_key, result)
-
+    
     return result
 
 
-@router.get("/{ward_id}/latest", dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
+@router.get("/{ward_id}/latest", dependencies=[Depends(require_role(["viewer", "admin"]))])
 def get_latest_for_ward(ward_id: int):
-    cache_key = f"ward:{ward_id}:latest"
-    cached_data = get_cache(cache_key)
-    if cached_data is not None:
-        return cached_data
-    
+
     query = text("""
         SELECT ward, window_start, window_end, avg_fill_level
         FROM ward_latest_fill_level
@@ -56,11 +46,10 @@ def get_latest_for_ward(ward_id: int):
             "window_end": None
         }
     result = dict(row)
-    set_cache(cache_key, result)
     return result
 
 
-@router.get("/{ward_id}/history", dependencies=[Depends(rate_limiter), Depends(require_role(["viewer", "admin"]))])
+@router.get("/{ward_id}/history", dependencies=[Depends(require_role(["viewer", "admin"]))])
 def get_ward_history(ward_id: int, hours: int = 24, limit: int = 100):
     query = text("""
         SELECT window_end, avg_fill_level

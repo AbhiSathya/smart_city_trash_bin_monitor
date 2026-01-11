@@ -33,6 +33,17 @@ ERROR_FREQ = float(os.getenv("ERROR_FREQ", "0.2"))
 BIN_IDS = ["B001", "B002", "B003", "B004"]
 WARDS = [1, 2, 3, 4, 5]
 
+# =========================
+# PostgreSQL Configuration
+# =========================
+
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "trash_bin_db")
+DB_USER = os.getenv("DB_USER", "admin")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "admin")
+
+
 LATITUDE_RANGE = (12.9500, 12.9900)
 LONGITUDE_RANGE = (77.5800, 77.6100)
 

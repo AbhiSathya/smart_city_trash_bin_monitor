@@ -1,6 +1,8 @@
-from sqlalchemy import create_engine    # type: ignore
-from sqlalchemy.engine import Engine    # type: ignore
+from sqlalchemy import create_engine                    # type: ignore
+from sqlalchemy.engine import Engine                    # type: ignore
+from sqlalchemy.orm import sessionmaker, Session        # type: ignore
 from app.config import settings
+from typing import Generator
 
 DATABASE_URL = (
     f"postgresql+psycopg2://{settings.DB_USER}:"
@@ -14,3 +16,16 @@ engine: Engine = create_engine(
     pool_size=5,
     max_overflow=10
 )
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
+
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

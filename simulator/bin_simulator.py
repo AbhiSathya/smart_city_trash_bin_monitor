@@ -7,9 +7,35 @@ from datetime import datetime, timezone, timedelta
 from kafka import KafkaProducer # type: ignore
 from kafka.errors import NoBrokersAvailable #type:ignore
 import config
+import psycopg2
 
 stop_event = threading.Event()
 trigger_event = threading.Event()
+
+# Function to register bins in the database
+def register_bin(ward: int, bin_id: str):
+
+    conn = psycopg2.connect(
+        host=config.DB_HOST,
+        port=config.DB_PORT,
+        database=config.DB_NAME,
+        user=config.DB_USER,
+        password=config.DB_PASSWORD
+    )
+    conn.autocommit = True
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO ward_bins (ward, bin_id)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING;
+            """,
+            (ward, bin_id)
+        )
+
+    conn.close()
+
 
 def get_kafka_producer(bootstrap_servers, retries=10, delay=5):
     """Retry logic for KafkaProducer connection"""
@@ -88,6 +114,8 @@ def bin_worker(bin_id):
                     invalid_record = introduce_data_issues(record.copy())
                     topic = config.INVALID_TOPIC
                     print(f"[DEBUG] Invalid record for bin {bin_id}")
+
+                    register_bin(record["ward"], bin_id)        # Register bin in DB
                     producer.send(topic, value=invalid_record)
                     print(f"[{topic}] {json.dumps(invalid_record)}")
                 else:
