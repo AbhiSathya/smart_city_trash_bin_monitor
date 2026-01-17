@@ -1,24 +1,30 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { WardRiskLatest } from "@/types/risk"
 
-export async function apiFetch(
-  endpoint: string,
-  options: RequestInit = {}
-) {
-  const token = localStorage.getItem("access_token");
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+
+export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...(options.headers || {}),
     },
-  });
+  })
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    if (res.status === 401 && typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
+    throw new Error(`API error: ${res.status}`)
   }
 
-  return res.json();
+  return res.json()
 }
+
+export async function fetchLatestWardRisk(): Promise<WardRiskLatest[]> {
+  console.log("Fetching latest ward risk data from API")
+  return apiFetch<WardRiskLatest[]>("/wards/latest/risk", { method: "GET" })
+}
+

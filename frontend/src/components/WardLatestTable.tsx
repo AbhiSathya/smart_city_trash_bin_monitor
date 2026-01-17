@@ -9,20 +9,21 @@ interface Props {
   onSelectWard: (ward: number) => void;
 }
 
-export default function WardLatestTable({
-  selectedWard,
-  onSelectWard,
-}: Props) {
+export default function WardLatestTable({ selectedWard, onSelectWard }: Props) {
   const [data, setData] = useState<WardLatest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch("/wards/latest")
       .then(setData)
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p>Loading latest ward data…</p>;
+  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  if (data.length === 0) return <p>No ward data available.</p>;
 
   return (
     <table width="100%" cellPadding={8}>
@@ -40,8 +41,7 @@ export default function WardLatestTable({
             onClick={() => onSelectWard(row.ward)}
             style={{
               cursor: "pointer",
-              background:
-                row.ward === selectedWard ? "#e0e7ff" : "transparent",
+              background: row.ward === selectedWard ? "#e0e7ff" : "transparent",
             }}
           >
             <td>{row.ward}</td>

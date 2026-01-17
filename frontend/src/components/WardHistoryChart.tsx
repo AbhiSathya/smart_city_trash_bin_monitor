@@ -20,16 +20,21 @@ interface Props {
 export default function WardHistoryChart({ wardId, hours }: Props) {
   const [data, setData] = useState<WardHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
 
     apiFetch(`/wards/${wardId}/history?hours=${hours}`)
       .then(setData)
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [wardId, hours]);
 
   if (loading) return <p>Loading ward history…</p>;
+  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  if (data.length === 0) return <p>No history data available.</p>;
 
   return (
     <div style={{ width: "100%", height: 300 }}>
@@ -41,9 +46,7 @@ export default function WardHistoryChart({ wardId, hours }: Props) {
           />
           <YAxis domain={[0, 100]} />
           <Tooltip
-            labelFormatter={(v) =>
-              new Date(v as string).toLocaleString()
-            }
+            labelFormatter={(v) => new Date(v as string).toLocaleString()}
           />
           <Line
             type="monotone"

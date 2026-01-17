@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { saveToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -13,17 +12,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const form = new URLSearchParams();
-    form.append("username", username);
-    form.append("password", password);
-
     try {
       const res = await fetch("http://localhost:8000/auth/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: form.toString(),
+        body: JSON.stringify({ username, password }),
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -31,9 +27,9 @@ export default function LoginPage() {
       }
 
       const data = await res.json();
-      saveToken(data.access_token);
 
       // redirect ONLY after successful login
+      console.log("Login successful, redirecting to dashboard...");
       window.location.href = "/dashboard";
     } catch {
       setError("Invalid username or password");

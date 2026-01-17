@@ -12,15 +12,17 @@ export default function DashboardPage() {
   const [checkedAuth, setCheckedAuth] = useState(false);
 
   useEffect(() => {
-    // auth check MUST happen inside useEffect
-    if (!isAuthenticated()) {
-      window.location.href = "/login";
-    } else {
-      setCheckedAuth(true);
+    async function checkAuth() {
+      const ok = await isAuthenticated();
+      if (!ok) {
+        window.location.href = "/login";
+      } else {
+        setCheckedAuth(true);
+      }
     }
+    checkAuth();
   }, []);
 
-  // Prevent render until auth is confirmed
   if (!checkedAuth) {
     return <p style={{ padding: 24 }}>Checking authentication…</p>;
   }
