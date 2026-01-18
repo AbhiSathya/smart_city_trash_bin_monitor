@@ -32,6 +32,8 @@ export default function WardLatestTable({ selectedWard, onSelectWard }: Props) {
           <th align="left">Ward</th>
           <th align="left">Avg Fill Level (%)</th>
           <th align="left">Window End</th>
+          <th align="left">Location(Latitude)</th>
+          <th align="left">Location(Longitude)</th>
         </tr>
       </thead>
       <tbody>
@@ -47,6 +49,8 @@ export default function WardLatestTable({ selectedWard, onSelectWard }: Props) {
             <td>{row.ward}</td>
             <td>{row.avg_fill_level.toFixed(1)}</td>
             <td>{new Date(row.window_end).toLocaleString()}</td>
+            <td>{row.latitude.toFixed(4)}</td>
+            <td>{row.longitude.toFixed(4)}</td>
           </tr>
         ))}
       </tbody>

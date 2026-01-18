@@ -13,16 +13,27 @@ router = APIRouter(prefix="/wards", tags=["wards"])
 @router.get("/latest", response_model=List[WardLatest], dependencies=[Depends(require_role(["viewer", "admin"]))])
 def get_latest_all_wards():
     query = text("""
-        SELECT ward, window_start, window_end, avg_fill_level
-        FROM ward_latest_fill_level
-        ORDER BY ward;
+        SELECT l.ward,
+            AVG(w.latitude) AS latitude,
+            AVG(w.longitude) AS longitude,
+            l.window_start,
+            l.window_end,
+            l.avg_fill_level
+        FROM ward_latest_fill_level l
+        JOIN valid_trash_bin_events w ON l.ward = w.ward
+        GROUP BY l.ward, l.window_start, l.window_end, l.avg_fill_level
+        ORDER BY l.ward;
+
     """)
 
     with engine.connect() as conn:
         rows = conn.execute(query).mappings().all()
 
+    # print("rows:", rows)
+
     result = [dict(row) for row in rows]
-    
+
+    # print("Result:", result)
     return result
 
 

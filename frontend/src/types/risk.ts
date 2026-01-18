@@ -9,3 +9,9 @@ export interface WardRiskLatest {
   pct_bins_above_80: number
   window_end: string
 }
+
+export type RiskWard = {
+  ward: number;
+  avg_fill_level: number;
+  pct_bins_above_80: number;
+};

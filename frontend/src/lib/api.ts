@@ -23,8 +23,8 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
   return res.json()
 }
 
-export async function fetchLatestWardRisk(): Promise<WardRiskLatest[]> {
+export async function fetchLatestWardRisk( hours: number = 24, threshold: number = 80): Promise<WardRiskLatest[]> {
   console.log("Fetching latest ward risk data from API")
-  return apiFetch<WardRiskLatest[]>("/wards/latest/risk", { method: "GET" })
+  return apiFetch<WardRiskLatest[]>("/wards/latest/risk?hours=${hours}&threshold=${threshold}", { method: "GET" })
 }
 

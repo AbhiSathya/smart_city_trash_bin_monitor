@@ -5,6 +5,10 @@ import { isAuthenticated, logout } from "@/lib/auth";
 import WardLatestTable from "@/components/WardLatestTable";
 import WardHistoryChart from "@/components/WardHistoryChart";
 import Card from "@/components/Card";
+import dynamic from "next/dynamic";
+const MapView = dynamic(() => import("@/components/MapView"), {
+  ssr: false,
+});
 
 export default function DashboardPage() {
   const [selectedWard, setSelectedWard] = useState(1);
@@ -80,6 +84,11 @@ export default function DashboardPage() {
         </div>
 
         <WardHistoryChart wardId={selectedWard} hours={hours} />
+
+        <section>
+          <h2 className="text-lg font-semibold">Ward Map View</h2>
+          <MapView />
+        </section>
       </Card>
     </div>
   );

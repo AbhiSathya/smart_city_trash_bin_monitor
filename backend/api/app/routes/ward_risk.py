@@ -8,12 +8,8 @@ from app.auth.dependencies import require_role
 router = APIRouter(prefix="/wards", tags=["Ward Risk"])
 
 
-@router.get(
-    "/latest/risk",
-    response_model=List[WardRiskLatest],
-    dependencies=[Depends(require_role(["viewer", "admin"]))]
-)
-def get_latest_ward_risk():
+@router.get("/latest/risk", response_model=List[WardRiskLatest], dependencies=[Depends(require_role(["viewer", "admin"]))])
+def get_latest_ward_risk(hours: int = 24, threshold: int = 80):
     query = text("""
         SELECT
             r.ward,
@@ -30,11 +26,8 @@ def get_latest_ward_risk():
         FROM ward_fill_level_risk_agg r
         JOIN ward_bins b
             ON r.ward = b.ward
-        WHERE r.window_end = (
-            SELECT MAX(window_end)
-            FROM ward_fill_level_risk_agg r2
-            WHERE r2.ward = r.ward
-        )
+        WHERE r.window_end >= NOW() - INTERVAL :hours || ' HOURS'
+          AND r.bins_above_80 >= :threshold
         GROUP BY
             r.ward,
             r.avg_fill_level,
@@ -45,11 +38,10 @@ def get_latest_ward_risk():
         ORDER BY r.ward;
     """)
     with engine.connect() as conn:
-        rows = conn.execute(query).mappings().all()
+        rows = conn.execute(query, {"hours": hours, "threshold": threshold}).mappings().all()
     
-    result = [dict(row) for row in rows]
+    return [dict(row) for row in rows]
 
-    return result
 
 
 @router.get("/{ward_id}/risk/history", dependencies=[Depends(require_role(["viewer", "admin"]))])
