@@ -82,13 +82,25 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-
         <WardHistoryChart wardId={selectedWard} hours={hours} />
-
+      </Card>
+      
+      <Card>
         <section>
           <h2 className="text-lg font-semibold">Ward Map View</h2>
           <MapView />
         </section>
+        <div className="mt-4 flex gap-6">
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full" /> Safe (&lt; 60%)
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-yellow-500 rounded-full" /> Warning (60–79%)
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-red-500 rounded-full" /> Critical (≥ 80%)
+          </span>
+        </div>
       </Card>
     </div>
   );

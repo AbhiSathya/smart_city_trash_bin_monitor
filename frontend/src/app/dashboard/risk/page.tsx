@@ -15,7 +15,7 @@ export default function RiskDashboardPage() {
 
   async function loadData() {
     try {
-      const result = await fetchLatestWardRisk(2, THRESHOLD);
+      const result = await fetchLatestWardRisk(24);
       setData(result);
       setError("");
     } catch (err) {
@@ -57,7 +57,7 @@ export default function RiskDashboardPage() {
   return (
     <div className="p-6 space-y-4">
       {/* 🔴 ALERT BANNER */}
-      <CriticalAlert wards={criticalWards} threshold={THRESHOLD} />
+      <CriticalAlert wards={criticalWards} />
 
       <h1 className="text-2xl font-bold">🚨 Ward Risk Overview</h1>
       <RiskTable data={data} />

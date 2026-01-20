@@ -22,11 +22,16 @@ import {
   LayerGroup
 } from "react-leaflet";
 
+import { greenIcon, yellowIcon, redIcon } from "@/lib/leafletIcons";
+import Link from "next/dist/client/link";
+
 const { BaseLayer, Overlay } = LayersControl;
 
 export default function WardMapPage() {
   const [wards, setWards] = useState<WardLatest[]>([]);
   const [error, setError] = useState("");
+  const [criticalThreshold, setCriticalThreshold] = useState(80);
+
 
   useEffect(() => {
     fetch("http://localhost:8000/wards/latest", { credentials: "include" })
@@ -41,10 +46,30 @@ export default function WardMapPage() {
       });
   }, []);
 
+  function getIcon(avg: number) {
+    if (avg >= criticalThreshold) return redIcon;
+    if (avg >= criticalThreshold - 20) return yellowIcon;
+    return greenIcon;
+  }
+
+
   return (
     <>
       <h1 className="text-xl font-bold mb-4">Ward Risk Map</h1>
       {error && <p className="text-red-500">{error}</p>}
+      <div className="my-4">
+        <label className="block font-medium">
+          Critical Threshold: {criticalThreshold}%
+        </label>
+        <input
+          type="range"
+          min={50}
+          max={90}
+          value={criticalThreshold}
+          onChange={e => setCriticalThreshold(Number(e.target.value))}
+          className="w-full"
+        />
+      </div>
 
       <MapContainer center={[12.97, 77.59]} zoom={12} style={{ height: "500px", width: "100%" }}>
         <LayersControl position="topright">
@@ -78,16 +103,24 @@ export default function WardMapPage() {
 
 
         {wards.map((w, idx) => (
-          <Marker key={`${w.ward}-${idx}`} position={[w.latitude, w.longitude]}>
+          <Marker 
+            key={`${w.ward}-${idx}`}
+            position={[w.latitude, w.longitude]}
+            icon={getIcon(w.avg_fill_level)}
+          >
             <Popup>
               <b>Ward {w.ward}</b>
               <br />
               Avg Fill: {w.avg_fill_level}%
+              <br />
+              <Link href={`/dashboard/ward/${w.ward}`}>
+                <button style={{ marginTop: "5px" }}>View Details</button>
+              </Link>
             </Popup>
           </Marker>
         ))}
       </MapContainer>
-
+      
       {wards.length === 0 && !error && <p>No ward data available</p>}
     </>
   );

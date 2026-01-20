@@ -1,13 +1,7 @@
 "use client";
 import { RiskWard } from "@/types/risk";
 
-export default function CriticalAlert({
-  wards,
-  threshold,
-}: {
-  wards: RiskWard[];
-  threshold: number;
-}) {
+export default function CriticalAlert({wards}: {wards: RiskWard[];}) {
   if (wards.length === 0) return null;
 
   return (
