@@ -24,11 +24,13 @@ The emphasis of this project is **data engineering correctness and robustness**,
 
 ## 🎯 Objectives (Implemented)
 - Real-time ingestion of trash bin sensor data
-- Safe handling of malformed or invalid events
-- Deduplication and late-data handling
-- Ward-level aggregation of bin fill levels
-- Reliable persistence with retry and recovery
-- Environment-driven configuration (Docker-ready)
+- Validation and isolation of malformed events (DLQ)
+- Deduplication and late-event handling
+- Ward-level and bin-level aggregations
+- Fault-tolerant persistence with retries
+- Low-latency analytics APIs
+- Caching and rate-limited backend access
+- Environment-driven, Dockerized deployment
 
 ---
 
@@ -56,10 +58,36 @@ The emphasis of this project is **data engineering correctness and robustness**,
 - Automatic recovery from Spark restarts
 - No duplicate writes due to idempotent UPSERTs
 
-### ✅ Performance Optimized
-- Batch time reduced from ~20s to ~2–6s
-- Optimized Spark parallelism and shuffles
-- Batched database writes
+### ✅ Backend APIs (FastAPI)
+- REST APIs to serve:
+  - Latest ward metrics
+  - Bin-level fill status
+  - Risk analysis & thresholds
+  - Historical summaries
+- JWT-based authentication
+- Role-aware access control (admin / user)
+
+### ✅ Redis Caching Layer
+- Redis used to cache frequently accessed analytics
+- Reduces database load on high-traffic endpoints
+
+### ✅ Rate Limiting & Security
+- User-key / username-based rate limiting
+- Prevents API abuse (no IP dependency)
+- Secure cookie / token-based authentication
+
+### ✅ Frontend Dashboard (Next.js + Leaflet)
+- Interactive dashboard built using Next.js
+- Real-time ward & bin visualization using Leaflet maps
+- Color-coded bins/wards based on fill level and risk
+- Charts and summary cards driven by backend APIs
+- Production-style layout similar to enterprise analytics dashboards
+
+### ✅ Real-Time Alerts & Risk Visualization
+- Configurable overflow and risk thresholds
+- Backend-computed risk levels exposed via APIs
+- Frontend highlights high-risk bins and wards visually
+- Supports proactive waste collection planning
 
 ### ✅ Maintainable & Configurable
 - All infrastructure config externalized via environment variables
@@ -70,16 +98,24 @@ The emphasis of this project is **data engineering correctness and robustness**,
 
 ## 🏗️ Current Architecture (Implemented)
 
-Data Simulator (Python)
-↓
-Apache Kafka
-├── valid-trash-bin-data
-└── invalid-trash-bin-data (DLQ)
-↓
-Apache Spark Structured Streaming
-↓
-PostgreSQL (Aggregated Results)
-
+- Data Simulator (Python)
+- ↓
+- Apache Kafka
+- ├── valid-trash-bin-data
+- └── invalid-trash-bin-data (DLQ)
+- ↓
+- Apache Spark Structured Streaming
+- ↓
+- PostgreSQL (Aggregated Results)
+- ↓
+- Redis
+- ↓
+- FastAPI Backend
+- ↓
+- Next.js Dashboard
+              └── Leaflet Maps
+              └── Critical Alerts
+              
 ---
 
 ## 🧰 Tech Stack (Implemented)
@@ -94,22 +130,9 @@ PostgreSQL (Aggregated Results)
 | Containerization | Docker & Docker Compose |
 | Language | Python |
 | Observability | Spark StreamingQueryListener |
-
----
-
-## 📂 Project Structure (Current)
-
-smart-city-trash-bin-monitor/
-│
-├── simulator/ # Trash bin data simulator
-├── spark-apps/ # Spark Structured Streaming job
-│ ├── kafka_to_postgres.py
-│ ├── config.py
-│ └── Dockerfile
-│
-├── docker-compose.yml # Kafka, Spark, Postgres setup
-├── .env.example # Environment configuration template
-└── README.md
+| Frontend | Next.js, Tailwind CSS |
+| Maps & Visualization | Leaflet |
+| Charts | Recharts |
 
 ---
 
@@ -135,29 +158,19 @@ Spark will:
 ---
 
 ## 🧪 Failure Scenarios Handled
-✅ Invalid JSON → routed to DLQ
 
-✅ Duplicate events → deduplicated
-
-✅ Postgres temporarily down → retried safely
-
-✅ Spark restart → resumes from checkpoint
-
-✅ Late data → handled via watermarking
+- Invalid JSON → routed to DLQ
+- Duplicate events → deduplicated
+- Late events → handled via watermarking
+- PostgreSQL downtime → retried safely
+- Spark restart → resumes from checkpoint
+- High API traffic → handled via Redis + rate limiting
 
 ---
 
 ## 🔮 Planned Enhancements (Not Implemented Yet)
 The following features are intentionally not implemented yet and are planned as future phases:
-
-🔲 Backend API (FastAPI) for querying bin status
-
-🔲 Dashboard (Map & charts for monitoring)
-
-🔲 Alerting system (overflow thresholds)
-
-🔲 Route optimization & prediction logic
-
-🔲 Historical batch analytics
-
-🔲 Airflow-based orchestration
+- Alerting system (overflow thresholds)
+- Route optimization & prediction logic
+- Historical batch analytics
+- Airflow-based orchestration
