@@ -168,6 +168,19 @@ Spark will:
 
 ---
 
+## 📸 Screenshots
+
+### Dashboard
+![Smart City Dashboard Screenshot](docs/smart_city_dashboard.png)
+
+### Smart City Map 
+![Smart City Map Screenshot](docs/smart_city_map.png)
+
+### Ward Analysis
+![Each Ward's Analysis Screenshot](docs/smart_city_ward_analysis.png)
+
+---
+
 ## 🔮 Planned Enhancements (Not Implemented Yet)
 The following features are intentionally not implemented yet and are planned as future phases:
 - Alerting system (overflow thresholds)
