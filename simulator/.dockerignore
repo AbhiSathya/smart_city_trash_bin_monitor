@@ -1,0 +1,13 @@
+# Byte-compiled / Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Environment files
+.env
+
+# Git
+.git
+.gitignore
