@@ -97,25 +97,29 @@ The emphasis of this project is **data engineering correctness and robustness**,
 ---
 
 ## 🏗️ Current Architecture (Implemented)
-
-- Data Simulator (Python)
-- ↓
-- Apache Kafka
-- ├── valid-trash-bin-data
-- └── invalid-trash-bin-data (DLQ)
-- ↓
-- Apache Spark Structured Streaming
-- ↓
-- PostgreSQL (Aggregated Results)
-- ↓
-- Redis
-- ↓
-- FastAPI Backend
-- ↓
-- Next.js Dashboard
+```text
+Data Simulator (Python)
+        ↓
+     Apache Kafka
+   ├── valid-trash-bin-data
+   └── invalid-trash-bin-data (DLQ)
+        ↓
+Apache Spark Structured Streaming
+        ↓
+     PostgreSQL
+        ↓
+       Redis
+        ↓
+  FastAPI Backend
+        ↓
+      Redis
+        ↓
+  FastAPI Backend
+        ↓
+  Next.js Dashboard
               └── Leaflet Maps
               └── Critical Alerts
-              
+```              
 ---
 
 ## 🧰 Tech Stack (Implemented)
