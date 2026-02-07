@@ -68,7 +68,7 @@ jobs:
 
     run-pytest:
         runs-on: ubuntu-latest
-        needs: enforce-feature-policy   # only run tests if enforce-feature-policy passes
+        needs: enforce-feature-policy   # only run tests if feature-policy passes
         steps:
         -   name: Checkout
             uses: actions/checkout@v4
@@ -78,10 +78,11 @@ jobs:
             with:
                 python-version: '3.11'
         
-        -   name: Lint Code
-            run: |
-                ruff check .
-            
+        -   name: Ruff Lint
+            uses: chartboost/ruff-action@v1
+            with:
+                args: check .
+
         -   name: Docker Build
             run: |
                 docker build -t ${{inputs.service}}-test -f ./binforge/Dockerfile .

@@ -66,7 +66,8 @@ class Bin_Generator_Config:
             with open(self.output_file, "w") as f:
                 yaml.dump(config, f, sort_keys=False)
 
-            print(colorama.Fore.GREEN + f"Configuration file '{self.output_file}' generated successfully." + colorama.Style.RESET_ALL)
+            print(colorama.Fore.GREEN + f"Configuration file '{self.output_file}' generated successfully."
+                + colorama.Style.RESET_ALL)
         except Exception as e:
             print(colorama.Fore.RED + f"Error generating configuration file: {e}" + colorama.Style.RESET_ALL)
 
