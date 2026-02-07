@@ -68,7 +68,7 @@ jobs:
 
     run-pytest:
         runs-on: ubuntu-latest
-        needs: enforce-feature-policy   # only run tests if policy passes
+        needs: enforce-feature-policy   # only run tests if enforce-feature-policy passes
         steps:
         -   name: Checkout
             uses: actions/checkout@v4

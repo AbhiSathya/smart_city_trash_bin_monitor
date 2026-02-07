@@ -1,5 +1,6 @@
 import yaml
 import random
+import colorama
 from datetime import datetime, timedelta
 
 class Bin_Generator_Config:
@@ -60,17 +61,19 @@ class Bin_Generator_Config:
             wards.append(ward)
         config = {"wards": wards}
 
-        # Write to YAML file
-        with open(self.output_file, "w") as f:
-            yaml.dump(config, f, sort_keys=False)
+        try:
+            # Write to YAML file
+            with open(self.output_file, "w") as f:
+                yaml.dump(config, f, sort_keys=False)
 
-        print(f"Configuration file '{self.output_file}' generated successfully.")
-
+            print(colorama.Fore.GREEN + f"Configuration file '{self.output_file}' generated successfully." + colorama.Style.RESET_ALL)
+        except Exception as e:
+            print(colorama.Fore.RED + f"Error generating configuration file: {e}" + colorama.Style.RESET_ALL)
 
 if __name__ == "__main__":
 
-    num_wards = int(input("Enter number of wards: "))
-    bins_per_ward = int(input("Enter number of bins per ward: "))
+    num_wards = int(input(colorama.Fore.YELLOW + "Enter number of wards: " + colorama.Style.RESET_ALL))
+    bins_per_ward = int(input(colorama.Fore.YELLOW + "Enter number of bins per ward: " + colorama.Style.RESET_ALL))
 
     obj = Bin_Generator_Config(num_wards, bins_per_ward, area_type_weights=[0.7, 0.2, 0.1], status_weights=[0.9, 0.1])
     obj.generate_yaml_config()
